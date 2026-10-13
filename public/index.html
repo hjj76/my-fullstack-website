@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的全栈网站</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; text-align: center; background-color: #f4f4f9; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 20px; padding: 20px; font-size: 18px; color: #333; background: white; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>欢迎来到我的全栈网站！</h1>
+    <p>点击下面的按钮，向我的后端要数据：</p>
+    
+    <button id="fetchBtn">调用后端接口</button>
+    <div id="result">这里将显示后端返回的数据...</div>
+
+    <script>
+                document.getElementById('fetchBtn').addEventListener('click', async () => {
+            const button = document.getElementById('fetchBtn'); // 获取按钮元素
+            const resultDiv = document.getElementById('result');
+            
+            // 1. 点击后禁用按钮，显示加载提示
+            button.disabled = true;
+            button.innerText = '请求中...';
+            resultDiv.innerText = '正在请求数据...';
+            
+            try {
+                const response = await fetch('/api/hello');
+                const data = await response.json();
+                resultDiv.innerText = `后端说：${data.message}\n时间：${data.time}`;
+            } catch (error) {
+                resultDiv.innerText = '请求失败了，请检查控制台报错！';
+                console.error('请求失败:', error);
+            } finally {
+                // 2. 无论成功失败，最后都恢复按钮
+                button.disabled = false;
+                button.innerText = '调用后端接口';
+            }
+        });
+    </script>
+</body>
+</html>
