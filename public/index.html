@@ -2,44 +2,85 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>我的全栈网站</title>
+    <title>我的全栈留言板</title>
     <style>
-        body { font-family: sans-serif; padding: 50px; text-align: center; background-color: #f4f4f9; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        body { font-family: sans-serif; padding: 50px; max-width: 600px; margin: auto; background-color: #f4f4f9; }
+        h1 { text-align: center; color: #333; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background-color: #0056b3; }
-        #result { margin-top: 20px; padding: 20px; font-size: 18px; color: #333; background: white; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        ul { list-style: none; padding: 0; }
+        li { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .time { display: block; font-size: 12px; color: #888; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <h1>欢迎来到我的全栈网站！</h1>
-    <p>点击下面的按钮，向我的后端要数据：</p>
-    
-    <button id="fetchBtn">调用后端接口</button>
-    <div id="result">这里将显示后端返回的数据...</div>
+    <h1>欢迎来到我的留言板！</h1>
+    <div class="input-group">
+        <input type="text" id="messageInput" placeholder="写点什么吧...">
+        <button id="submitBtn">提交留言</button>
+    </div>
+    <ul id="messageList">
+        <li>加载中...</li>
+    </ul>
 
     <script>
-                document.getElementById('fetchBtn').addEventListener('click', async () => {
-            const button = document.getElementById('fetchBtn'); // 获取按钮元素
-            const resultDiv = document.getElementById('result');
-            
-            // 1. 点击后禁用按钮，显示加载提示
-            button.disabled = true;
-            button.innerText = '请求中...';
-            resultDiv.innerText = '正在请求数据...';
-            
+        // 加载留言列表
+        async function loadMessages() {
+            const list = document.getElementById('messageList');
             try {
-                const response = await fetch('/api/hello');
-                const data = await response.json();
-                resultDiv.innerText = `后端说：${data.message}\n时间：${data.time}`;
+                const response = await fetch('/api/messages');
+                const result = await response.json();
+                list.innerHTML = ''; // 清空列表
+                
+                if (result.data.length === 0) {
+                    list.innerHTML = '<li>目前还没有留言，快来抢占沙发！</li>';
+                    return;
+                }
+
+                result.data.forEach(msg => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `${msg.content} <span class="time">${new Date(msg.created_at).toLocaleString()}</span>`;
+                    list.appendChild(li);
+                });
             } catch (error) {
-                resultDiv.innerText = '请求失败了，请检查控制台报错！';
-                console.error('请求失败:', error);
-            } finally {
-                // 2. 无论成功失败，最后都恢复按钮
-                button.disabled = false;
-                button.innerText = '调用后端接口';
+                list.innerHTML = '<li>加载留言失败，请检查后端是否运行。</li>';
+                console.error(error);
+            }
+        }
+
+        // 提交新留言
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content) {
+                alert('内容不能为空哦！');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    input.value = ''; // 清空输入框
+                    await loadMessages(); // 重新加载列表
+                } else {
+                    alert('提交失败：' + result.error);
+                }
+            } catch (error) {
+                alert('网络错误，请稍后重试');
             }
         });
+
+        // 页面加载时自动读取留言
+        loadMessages();
     </script>
 </body>
 </html>
